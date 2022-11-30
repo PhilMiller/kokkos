@@ -51,7 +51,22 @@
 namespace Kokkos {
 namespace Impl {
 
-thread_local int SharedAllocationRecord<void, void>::t_tracking_enabled = 1;
+static thread_local int t_tracking_enabled = 1;
+
+#if defined(__EDG__) && !defined(KOKKOS_COMPILER_INTEL)
+#pragma push
+#pragma diag_suppress implicit_return_from_non_void_function
+#endif
+KOKKOS_FUNCTION int SharedAllocationRecord<void, void>::tracking_enabled() {
+  KOKKOS_IF_ON_HOST(return t_tracking_enabled;)
+  KOKKOS_IF_ON_DEVICE(return 0;)
+}
+#if defined(__EDG__) && !defined(KOKKOS_COMPILER_INTEL)
+#pragma pop
+#endif
+
+void SharedAllocationRecord<void, void>::tracking_disable() { t_tracking_enabled = 0; }
+void SharedAllocationRecord<void, void>::tracking_enable() { t_tracking_enabled = 1; }
 
 #ifdef KOKKOS_ENABLE_DEBUG
 bool SharedAllocationRecord<void, void>::is_sane(
